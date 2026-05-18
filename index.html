@@ -66,10 +66,27 @@
         <div class="progress-container"><div id="progress-bar"></div></div>
     </div>
 
-    <script>
+    <script type="module">
+        import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-app.js";
+        import { getDatabase, ref, get } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-database.js";
+
+        const firebaseConfig = {
+            apiKey: "AIzaSyAnGUaoBlowtIJjO9S7-cWWjWw9t099qaU",
+            authDomain: "all-in-one-c3520.firebaseapp.com",
+            projectId: "all-in-one-c3520",
+            storageBucket: "all-in-one-c3520.firebasestorage.app",
+            messagingSenderId: "122111947057",
+            appId: "1:122111947057:web:88d6d8bc511e943bf24010",
+            measurementId: "G-MP98B3NLCW",
+            databaseURL: "https://all-in-one-c3520-default-rtdb.firebaseio.com"
+        };
+
+        const app = initializeApp(firebaseConfig);
+        const db = getDatabase(app);
+
         const progressBar = document.getElementById('progress-bar');
         const loaderText = document.getElementById('loader-text');
-        const loaderLogo = document.getElementById('loader-logo'); 
+        const loaderLogo = document.getElementById('loader-logo');
 
         function simulateLoading(target, textPrefix = "KotakEngine - Načítání") {
             return new Promise((resolve) => {
@@ -87,43 +104,52 @@
             });
         }
 
+        function showError(message = "CHYBA SYSTÉMU") {
+            progressBar.style.width = '100%';
+            loaderLogo.classList.add('logo-maintenance');
+            progressBar.classList.add('bar-maintenance');
+            loaderText.innerText = message;
+            loaderText.style.color = "#ff0000";
+            loaderText.style.textShadow = "0 0 10px #ff0000";
+        }
+
         async function init() {
             try {
                 await simulateLoading(20);
 
-                const response = await fetch('data.json?t=' + Date.now());
-                if (!response.ok) throw new Error();
-                const data = await response.json();
+                // Načtení app/maintenance z RTDB
+                const snapshot = await get(ref(db, 'app/maintenance'));
 
-                // MAINTENANCE
-                if (data.settings.maintenance) {
-                    await simulateLoading(100, "Prověřování systému"); 
+                if (!snapshot.exists()) {
+                    showError("CHYBA: DATA NENALEZENA");
+                    return;
+                }
+
+                const maintenance = snapshot.val();
+
+                if (maintenance === true) {
+                    await simulateLoading(100, "Prověřování systému");
 
                     setTimeout(() => {
                         loaderLogo.classList.add('logo-maintenance');
                         progressBar.classList.add('bar-maintenance');
-
                         loaderText.innerText = "MAINTENANCE MODE";
                         loaderText.style.color = "#ff0000";
                         loaderText.style.textShadow = "0 0 10px #ff0000";
                     }, 100);
-                    return; 
+                    return;
                 }
 
                 await simulateLoading(100);
-
-                // PŘESMĚROVÁNÍ
                 window.location.href = 'app.html';
 
             } catch (e) {
-                progressBar.style.width = '100%';
-                loaderLogo.classList.add('logo-maintenance'); 
-                progressBar.classList.add('bar-maintenance');
-                loaderText.innerText = "CHYBA SYSTÉMU";
-                loaderText.style.color = "#ff0000";
+                console.error(e);
+                showError("CHYBA SYSTÉMU");
             }
         }
-        window.onload = init;
+
+        init();
     </script>
 </body>
 </html>
