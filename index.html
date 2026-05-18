@@ -25,6 +25,7 @@
         #loader-logo { 
             max-width: 150px; height: auto; 
             margin-top: auto; margin-bottom: auto; 
+            /* Plynulý přechod všech efektů za 0.7 sekundy */
             transition: filter 0.7s ease-in-out, transform 0.7s ease-in-out;
             filter: brightness(1) grayscale(0);
         }
@@ -46,9 +47,12 @@
             transition: width 0.15s ease-out; 
         }
 
+        /* --- STAV ÚDRŽBY / CHYBY (SYTĚ ČERVENÁ) --- */
+
         .logo-maintenance {
+            /* Nejdřív grayscale, pak sepia pro barvitelný základ, pak sytě červená */
             filter: grayscale(100%) sepia(100%) saturate(10000%) hue-rotate(320deg) brightness(1.2) drop-shadow(0 0 20px #ff0000) !important;
-            transform: scale(1.05);
+            transform: scale(1.05); /* Lehké zvětšení pro efekt "roznutí" */
         }
 
         .bar-maintenance {
@@ -56,38 +60,38 @@
             box-shadow: 0 0 15px #ff0000 !important;
             transition: background 0.5s ease-in-out !important;
         }
+
+        /* Hlavní kontejner pro obsah vašeho webu, který se zobrazí po načtení */
+        #main-content {
+            display: none;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            text-align: center;
+        }
     </style>
 </head>
 <body>
 
+    <!-- Načítací brána (Gateway) -->
     <div id="loader-overlay">
         <img src="logo.png" alt="Logo" id="loader-logo">
         <div id="loader-text">KotakEngine - Inicializace [0]%</div>
         <div class="progress-container"><div id="progress-bar"></div></div>
     </div>
 
-    <script type="module">
-        import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-app.js";
-        import { getDatabase, ref, get } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-database.js";
+    <!-- Zde bude tvůj skutečný obsah webu, který se odhalí po úspěšném loading baru -->
+    <div id="main-content">
+        <h1>Vítej v KotakEngine</h1>
+        <p>Aplikace byla úspěšně inicializována.</p>
+    </div>
 
-        const firebaseConfig = {
-            apiKey: "AIzaSyAnGUaoBlowtIJjO9S7-cWWjWw9t099qaU",
-            authDomain: "all-in-one-c3520.firebaseapp.com",
-            projectId: "all-in-one-c3520",
-            storageBucket: "all-in-one-c3520.firebasestorage.app",
-            messagingSenderId: "122111947057",
-            appId: "1:122111947057:web:88d6d8bc511e943bf24010",
-            measurementId: "G-MP98B3NLCW",
-            databaseURL: "https://all-in-one-c3520-default-rtdb.firebaseio.com"
-        };
-
-        const app = initializeApp(firebaseConfig);
-        const db = getDatabase(app);
-
+    <script>
         const progressBar = document.getElementById('progress-bar');
         const loaderText = document.getElementById('loader-text');
-        const loaderLogo = document.getElementById('loader-logo');
+        const loaderLogo = document.getElementById('loader-logo'); 
 
+        // Funkce pro plynulou animaci progress baru
         function simulateLoading(target, textPrefix = "KotakEngine - Načítání") {
             return new Promise((resolve) => {
                 let progress = parseInt(progressBar.style.width) || 0;
@@ -104,52 +108,51 @@
             });
         }
 
-        function showError(message = "CHYBA SYSTÉMU") {
-            progressBar.style.width = '100%';
-            loaderLogo.classList.add('logo-maintenance');
-            progressBar.classList.add('bar-maintenance');
-            loaderText.innerText = message;
-            loaderText.style.color = "#ff0000";
-            loaderText.style.textShadow = "0 0 10px #ff0000";
-        }
-
         async function init() {
             try {
-                await simulateLoading(20);
+                // Fáze 1: Začátek načítání aplikací
+                await simulateLoading(25);
 
-                // Načtení app/maintenance z RTDB
-                const snapshot = await get(ref(db, 'app/maintenance'));
+                // Načtení čistého konfiguračního souboru údržby
+                const response = await fetch('maintenance.json?t=' + Date.now());
+                if (!response.ok) throw new Error();
+                const data = await response.json();
 
-                if (!snapshot.exists()) {
-                    showError("CHYBA: DATA NENALEZENA");
-                    return;
-                }
+                // Pokud je aktivní údržba (true)
+                if (data.maintenance) {
+                    await simulateLoading(100, "Prověřování systému"); 
 
-                const maintenance = snapshot.val();
-
-                if (maintenance === true) {
-                    await simulateLoading(100, "Prověřování systému");
-
+                    // Krátká pauza před vizuální změnou do červené barvy
                     setTimeout(() => {
                         loaderLogo.classList.add('logo-maintenance');
                         progressBar.classList.add('bar-maintenance');
+
                         loaderText.innerText = "MAINTENANCE MODE";
                         loaderText.style.color = "#ff0000";
                         loaderText.style.textShadow = "0 0 10px #ff0000";
                     }, 100);
-                    return;
+                    return; // Zastaví vykonávání, nepustí uživatele dál
                 }
 
+                // Fáze 2: Dokončení úspěšného načítání, pokud údržba neběží
                 await simulateLoading(100);
-                window.location.href = 'app.html';
+
+                // Schování loaderu a zobrazení hlavního obsahu
+                document.getElementById('loader-overlay').style.display = 'none';
+                document.getElementById('main-content').style.display = 'flex';
 
             } catch (e) {
-                console.error(e);
-                showError("CHYBA SYSTÉMU");
+                // Bezpečnostní pojistka v případě selhání fetchování nebo chybějícího souboru
+                progressBar.style.width = '100%';
+                loaderLogo.classList.add('logo-maintenance'); 
+                progressBar.classList.add('bar-maintenance');
+                loaderText.innerText = "CHYBA SYSTÉMU";
+                loaderText.style.color = "#ff0000";
+                loaderText.style.textShadow = "0 0 10px #ff0000";
             }
         }
 
-        init();
+        window.onload = init;
     </script>
 </body>
 </html>
