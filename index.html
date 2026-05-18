@@ -1,0 +1,129 @@
+<!DOCTYPE html>
+<html lang="cs">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>KotakEngine</title>
+    <style>
+        body { 
+            font-family: 'Consolas', 'Monaco', 'Courier New', monospace; 
+            background: #0a0a0a; 
+            color: white; 
+            margin: 0; padding: 0;
+            height: 100vh; width: 100vw;
+            overflow: hidden; 
+            display: flex; flex-direction: column;
+            align-items: center; justify-content: center; 
+        }
+
+        #loader-overlay {
+            position: fixed; top: 0; left: 0; width: 100%; height: 100%;
+            background: #0a0a0a; display: flex; flex-direction: column;
+            align-items: center; z-index: 1000; padding: 40px 0; box-sizing: border-box;
+        }
+
+        #loader-logo { 
+            max-width: 150px; height: auto; 
+            margin-top: auto; margin-bottom: auto; 
+            transition: filter 0.7s ease-in-out, transform 0.7s ease-in-out;
+            filter: brightness(1) grayscale(0);
+        }
+
+        #loader-text { 
+            font-size: 1.1rem; color: #00c853; margin-bottom: 15px; 
+            text-shadow: 0 0 5px #00c853; text-align: center;
+            transition: all 0.5s ease;
+        }
+
+        .progress-container { 
+            width: 250px; height: 6px; background: #1a1a1a; 
+            border-radius: 10px; overflow: hidden; border: 1px solid #333; margin-bottom: 20px;
+        }
+
+        #progress-bar { 
+            height: 100%; width: 0%; background: #00c853; 
+            box-shadow: 0 0 10px #00c853; 
+            transition: width 0.15s ease-out; 
+        }
+
+        .logo-maintenance {
+            filter: grayscale(100%) sepia(100%) saturate(10000%) hue-rotate(320deg) brightness(1.2) drop-shadow(0 0 20px #ff0000) !important;
+            transform: scale(1.05);
+        }
+
+        .bar-maintenance {
+            background: #ff0000 !important;
+            box-shadow: 0 0 15px #ff0000 !important;
+            transition: background 0.5s ease-in-out !important;
+        }
+    </style>
+</head>
+<body>
+
+    <div id="loader-overlay">
+        <img src="logo.png" alt="Logo" id="loader-logo">
+        <div id="loader-text">KotakEngine - Inicializace [0]%</div>
+        <div class="progress-container"><div id="progress-bar"></div></div>
+    </div>
+
+    <script>
+        const progressBar = document.getElementById('progress-bar');
+        const loaderText = document.getElementById('loader-text');
+        const loaderLogo = document.getElementById('loader-logo'); 
+
+        function simulateLoading(target, textPrefix = "KotakEngine - Načítání") {
+            return new Promise((resolve) => {
+                let progress = parseInt(progressBar.style.width) || 0;
+                const interval = setInterval(() => {
+                    progress += Math.floor(Math.random() * 8) + 4;
+                    if (progress >= target) {
+                        progress = target;
+                        clearInterval(interval);
+                        resolve();
+                    }
+                    progressBar.style.width = progress + '%';
+                    loaderText.innerText = `${textPrefix} [${progress}]%`;
+                }, 80);
+            });
+        }
+
+        async function init() {
+            try {
+                await simulateLoading(20);
+
+                const response = await fetch('data.json?t=' + Date.now());
+                if (!response.ok) throw new Error();
+                const data = await response.json();
+
+                // MAINTENANCE
+                if (data.settings.maintenance) {
+                    await simulateLoading(100, "Prověřování systému"); 
+
+                    setTimeout(() => {
+                        loaderLogo.classList.add('logo-maintenance');
+                        progressBar.classList.add('bar-maintenance');
+
+                        loaderText.innerText = "MAINTENANCE MODE";
+                        loaderText.style.color = "#ff0000";
+                        loaderText.style.textShadow = "0 0 10px #ff0000";
+                    }, 100);
+                    return; 
+                }
+
+                await simulateLoading(100);
+
+                // PŘESMĚROVÁNÍ
+                window.location.href = 'app.html';
+
+            } catch (e) {
+                progressBar.style.width = '100%';
+                loaderLogo.classList.add('logo-maintenance'); 
+                progressBar.classList.add('bar-maintenance');
+                loaderText.innerText = "CHYBA SYSTÉMU";
+                loaderText.style.color = "#ff0000";
+            }
+        }
+        window.onload = init;
+    </script>
+</body>
+</html>
