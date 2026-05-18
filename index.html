@@ -46,7 +46,7 @@
             transition: width 0.15s ease-out; 
         }
 
-        /* Styl pro živý odpočet pod textem */
+        /* Živý odpočet pod textem */
         #countdown-box {
             display: none;
             font-size: 0.95rem;
@@ -103,13 +103,155 @@
         <div id="countdown-box">Zprovoznění za: <span id="countdown-timer">--:--:--:--</span></div>
     </div>
 
-    <!-- Hlavní web, který po načtení překryje loader -->
+    <!-- Zde začíná tvůj skutečný obsah webu -->
     <div id="main-content">
         <h1>Vítej v KotakEngine</h1>
         <p>Aplikace byla úspěšně inicializována a načtena.</p>
     </div>
 
-    <!-- Spuštění logiky -->
-    <script src="maintenance.js"></script>
+    <!-- Logika ovládání přes JSON -->
+    <script>
+        (function() {
+            const progressBar = document.getElementById('progress-bar');
+            const loaderText = document.getElementById('loader-text');
+            const loaderLogo = document.getElementById('loader-logo'); 
+            const countdownBox = document.getElementById('countdown-box');
+            const countdownTimer = document.getElementById('countdown-timer');
+
+            let countdownInterval;
+
+            // Pomocná funkce pro převod formátu "DD MM YYYY HH:mm" na Date Objekt
+            function parseDateString(str) {
+                if (!str) return null;
+                const parts = str.split(' ');
+                if (parts.length !== 4) return null;
+                const day = parseInt(parts[0], 10);
+                const month = parseInt(parts[1], 10) - 1;
+                const year = parseInt(parts[2], 10);
+                const timeParts = parts[3].split(':');
+                const hours = parseInt(timeParts[0], 10);
+                const minutes = parseInt(timeParts[1], 10);
+                return new Date(year, month, day, hours, minutes);
+            }
+
+            // Funkce pro plynulou animaci progress baru
+            function simulateLoading(target, textPrefix = "KotakEngine - Načítání") {
+                return new Promise((resolve) => {
+                    let progress = parseInt(progressBar.style.width) || 0;
+                    const interval = setInterval(() => {
+                        progress += Math.floor(Math.random() * 8) + 4;
+                        if (progress >= target) {
+                            progress = target;
+                            clearInterval(interval);
+                            resolve();
+                        }
+                        progressBar.style.width = progress + '%';
+                        loaderText.innerText = `${textPrefix} [${progress}]%`;
+                    }, 80);
+                });
+            }
+
+            // Živý odpočet času na obrazovce
+            function startCountdown(targetTime) {
+                countdownBox.style.display = "block";
+
+                function updateTimer() {
+                    const now = new Date().getTime();
+                    const distance = targetTime - now;
+
+                    if (distance < 0) {
+                        clearInterval(countdownInterval);
+                        countdownTimer.innerText = "00:00:00:00";
+                        window.location.reload();
+                        return;
+                    }
+
+                    const days = Math.floor(distance / (1000 * 60 * 60 * 24));
+                    const hours = Math.floor((distance % (1000 * 60 * 60 * 24)) / (1000 * 60 * 60));
+                    const minutes = Math.floor((distance % (1000 * 60 * 60)) / (1000 * 60));
+                    const seconds = Math.floor((distance % (1000 * 60)) / 1000);
+
+                    const dStr = String(days).padStart(2, '0');
+                    const hStr = String(hours).padStart(2, '0');
+                    const mStr = String(minutes).padStart(2, '0');
+                    const sStr = String(seconds).padStart(2, '0');
+
+                    countdownTimer.innerText = `${dStr}d ${hStr}h ${mStr}m ${sStr}s`;
+                }
+
+                updateTimer();
+                countdownInterval = setInterval(updateTimer, 1000);
+            }
+
+            // Zapnutí červeného údržbového módu
+            function triggerMaintenanceMode(text, targetTime, showCountdown) {
+                setTimeout(() => {
+                    loaderLogo.classList.add('logo-maintenance');
+                    progressBar.classList.add('bar-maintenance');
+                    loaderText.innerText = text;
+                    loaderText.style.color = "#ff0000";
+                    loaderText.style.textShadow = "0 0 10px #ff0000";
+                    
+                    if (showCountdown && targetTime) {
+                        startCountdown(targetTime.getTime());
+                    }
+                }, 100);
+            }
+
+            async function init() {
+                try {
+                    // První fáze loadingu
+                    await simulateLoading(35);
+
+                    // Načtení JSON konfigurace z externího souboru
+                    const response = await fetch('maintenance.json?t=' + Date.now());
+                    if (!response.ok) throw new Error();
+                    const data = await response.json();
+
+                    const now = new Date();
+                    const startTime = parseDateString(data.start);
+                    const endTime = parseDateString(data.end);
+
+                    let isMaintenance = false;
+                    let statusText = "MAINTENANCE MODE";
+
+                    // 1. Kontrola vynucené údržby
+                    if (data.forced === true) {
+                        isMaintenance = true;
+                    }
+                    // 2. Kontrola plánované údržby podle času
+                    else if (startTime && endTime && now >= startTime && now <= endTime) {
+                        isMaintenance = true;
+                        const options = { day: 'numeric', month: 'numeric', hour: '2-digit', minute: '2-digit' };
+                        statusText = `ÚDRŽBA DO ${endTime.toLocaleDateString('cs-CZ', options)}`;
+                    }
+
+                    // Vyhodnocení stavu
+                    if (isMaintenance) {
+                        await simulateLoading(100, "Prověřování systému");
+                        const showCountdown = (data["show-endtime"] && endTime && endTime > now);
+                        triggerMaintenanceMode(statusText, endTime, showCountdown);
+                        return; 
+                    }
+
+                    // Pokud údržba neběží, dojedeme do 100%
+                    await simulateLoading(100);
+                    
+                    // Spustíme animaci vyjetí hlavního webu nahoru přes loader
+                    const mainContent = document.getElementById('main-content');
+                    if (mainContent) {
+                        mainContent.classList.add('slide-up');
+                    }
+
+                } catch (e) {
+                    // Fallback při chybě sítě nebo chybějícím JSONu
+                    progressBar.style.width = '100%';
+                    triggerMaintenanceMode("CHYBA SYSTÉMU", null, false);
+                }
+            }
+
+            window.onload = init;
+        })();
+    </script>
 </body>
 </html>
