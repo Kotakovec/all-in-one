@@ -5,281 +5,765 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>KotakEngine</title>
     <style>
-        body { 
-            font-family: 'Consolas', 'Monaco', 'Courier New', monospace; 
-            background: #0a0a0a; 
-            color: white; 
-            margin: 0; padding: 0;
-            height: 100vh; width: 100vw;
-            overflow: hidden; 
-            display: flex; flex-direction: column;
-            align-items: center; justify-content: center; 
+        /* Reset a základní nastavení */
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
         }
 
-        #loader-overlay {
-            position: fixed; top: 0; left: 0; width: 100%; height: 100%;
-            background: #0a0a0a; display: flex; flex-direction: column;
-            align-items: center; z-index: 100; padding: 40px 0; box-sizing: border-box;
-            transition: transform 0.8s cubic-bezier(0.25, 1, 0.5, 1);
+        body, html {
+            width: 100%;
+            height: 100%;
+            overflow: hidden; /* Zakáže scrollování */
+            font-family: 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;
+            background-color: #0f111a;
+            color: #ffffff;
+            position: relative;
         }
 
-        #loader-logo { 
-            max-width: 150px; height: auto; 
-            margin-top: auto; margin-bottom: auto; 
-            transition: filter 0.7s ease-in-out, transform 0.7s ease-in-out;
-            filter: brightness(1) grayscale(0);
+        /* --- ÚVODNÍ STRÁNKA (LANDING PAGE) --- */
+        #landingPage {
+            width: 100%;
+            height: 100%;
+            display: flex;
+            justify-content: center;
+            align-items: center;
         }
 
-        #loader-text { 
-            font-size: 1.1rem; color: #00c853; margin-bottom: 15px; 
-            text-shadow: 0 0 5px #00c853; text-align: center;
-            transition: all 0.5s ease;
+        .top-bar {
+            position: absolute;
+            top: 20px;
+            right: 20px;
+            z-index: 10;
         }
 
-        .progress-container { 
-            width: 250px; height: 6px; background: #1a1a1a; 
-            border-radius: 10px; overflow: hidden; border: 1px solid #333; margin-bottom: 20px;
+        .profile-icon {
+            width: 45px;
+            height: 45px;
+            border-radius: 50%;
+            background-color: #1f2335;
+            border: 2px solid #414868;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            user-select: none;
         }
 
-        #progress-bar { 
-            height: 100%; width: 0%; background: #00c853; 
-            box-shadow: 0 0 10px #00c853; 
-            transition: width 0.15s ease-out, background 0.5s ease-in-out, box-shadow 0.5s ease-in-out; 
+        .profile-icon:hover {
+            transform: scale(1.05);
+            border-color: #7aa2f7;
+            box-shadow: 0 0 10px rgba(122, 162, 247, 0.3);
         }
 
-        /* Živý odpočet pod textem */
-        #countdown-box {
+        .profile-icon .plus-sign {
+            font-size: 24px;
+            color: #7aa2f7;
+            font-weight: bold;
+            line-height: 1;
+        }
+
+        .profile-icon .user-avatar {
+            font-size: 20px;
             display: none;
-            font-size: 0.95rem;
-            color: #888;
-            margin-top: 5px;
+        }
+
+        .profile-icon.is-logged-in {
+            background-color: #7aa2f7;
+            border-color: #ffffff;
+        }
+
+        .profile-icon.is-logged-in .plus-sign {
+            display: none;
+        }
+
+        .profile-icon.is-logged-in .user-avatar {
+            display: block;
+            color: #0f111a;
+        }
+
+        .main-container {
+            text-align: center;
+            animation: fadeIn 1s ease-out;
+            z-index: 5;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+        }
+
+        .title {
+            font-size: 4rem;
+            font-weight: 800;
+            letter-spacing: 2px;
+            margin-bottom: 20px;
+            background: linear-gradient(45deg, #7aa2f7, #b4f9f8);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            text-shadow: 0 4px 20px rgba(122, 162, 247, 0.15);
+        }
+
+        .enter-btn {
+            position: relative;
+            padding: 12px 40px;
+            font-size: 1.2rem;
+            font-weight: 600;
+            text-transform: uppercase;
             letter-spacing: 1px;
+            color: #ffffff;
+            background: #0f111a;
+            border: 2px solid #7aa2f7;
+            border-radius: 5px;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            outline: none;
+            margin-bottom: 20px;
         }
 
-        /* --- STAV ÚDRŽBY / CHYBY (SYTĚ ČERVENÁ) --- */
-        .logo-maintenance {
-            filter: grayscale(100%) sepia(100%) saturate(10000%) hue-rotate(320deg) brightness(1.2) drop-shadow(0 0 20px #ff0000) !important;
-            transform: scale(1.05); 
+        .enter-btn:hover {
+            background: #7aa2f7;
+            color: #0f111a;
+            box-shadow: 0 0 20px rgba(122, 162, 247, 0.4);
+            transform: translateY(-2px);
         }
 
-        .bar-maintenance {
-            background: #ff0000 !important;
-            box-shadow: 0 0 15px #ff0000 !important;
+        /* STYL PRO CHECKBOX POD TLAČÍTKEM */
+        .auto-redirect-container {
+            display: none; /* Schováno pro nepřihlášené */
+            align-items: center;
+            gap: 8px;
+            font-size: 0.95rem;
+            color: #a9b1d6;
+            cursor: pointer;
+            user-select: none;
+            animation: fadeIn 0.5s ease-out;
         }
 
-        /* --- HLAVNÍ OBSAH (IFRAME PRO APP.HTML) --- */
-        #main-content {
-            display: none;
-            width: 100vw; height: 100vh;
-            border: none;
-            margin: 0; padding: 0;
-            background: #0a0a0a;
+        .auto-redirect-container input {
+            cursor: pointer;
+            accent-color: #7aa2f7; /* Modrá barva checkboxu */
+            width: 16px;
+            height: 16px;
         }
 
-        /* Třída pro odsunutí loaderu nahoru pryč z obrazovky */
-        .loader-hide {
+        /* IOS ZOOM ANIMACE */
+        .ios-zoom-ripple {
+            position: fixed;
+            border-radius: 50%;
+            background: #1a1b26;
+            pointer-events: none;
+            z-index: 9999;
+            transform: translate(-50%, -50%) scale(0);
+            transition: transform 0.6s cubic-bezier(0.4, 0, 0.2, 1);
+        }
+
+        .ios-zoom-ripple.animate {
+            transform: translate(-50%, -50%) scale(4);
+        }
+
+        /* MODALY A CHYBOVÉ PRVKY */
+        .modal-overlay {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background-color: rgba(0, 0, 0, 0.6);
+            backdrop-filter: blur(5px);
+            z-index: 100;
+            display: flex;
+            justify-content: center;
+            align-items: flex-start;
+            opacity: 0;
+            pointer-events: none;
+            transition: opacity 0.4s ease;
+        }
+
+        .modal-overlay.active {
+            opacity: 1;
+            pointer-events: auto;
+        }
+
+        .modal-content {
+            background-color: #1a1b26;
+            width: 100%;
+            max-width: 400px;
+            padding: 30px;
+            border-radius: 0 0 15px 15px;
+            border: 2px solid #414868;
+            border-top: none;
+            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.5);
             transform: translateY(-100%);
+            transition: transform 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.1);
+        }
+
+        .modal-overlay.active .modal-content {
+            transform: translateY(0);
+        }
+
+        .auth-tabs {
+            display: flex;
+            margin-bottom: 25px;
+            border-bottom: 2px solid #414868;
+        }
+
+        .auth-tab {
+            flex: 1;
+            padding: 10px;
+            text-align: center;
+            cursor: pointer;
+            font-weight: 600;
+            color: #a9b1d6;
+            transition: all 0.3s ease;
+        }
+
+        .auth-tab.active {
+            color: #7aa2f7;
+            border-bottom: 3px solid #7aa2f7;
+            margin-bottom: -2px;
+        }
+
+        .auth-form {
+            display: none;
+        }
+
+        .auth-form.active {
+            display: block;
+        }
+
+        .form-group {
+            margin-bottom: 18px;
+        }
+
+        .form-group label {
+            display: block;
+            margin-bottom: 6px;
+            font-size: 0.9rem;
+            color: #a9b1d6;
+        }
+
+        .form-group input {
+            width: 100%;
+            padding: 10px 12px;
+            background-color: #1f2335;
+            border: 1px solid #414868;
+            border-radius: 5px;
+            color: #ffffff;
+            font-size: 1rem;
+            outline: none;
+            transition: border-color 0.3s ease;
+        }
+
+        .form-group input:focus {
+            border-color: #7aa2f7;
+        }
+
+        .error-message {
+            color: #f7768e;
+            font-size: 0.85rem;
+            margin-top: 5px;
+            display: none;
+        }
+
+        .profile-view {
+            display: none;
+            text-align: center;
+            padding: 10px 0;
+        }
+
+        .profile-view.active {
+            display: block;
+        }
+
+        .profile-view-avatar {
+            font-size: 50px;
+            margin-bottom: 15px;
+        }
+
+        .profile-view-username {
+            font-size: 1.6rem;
+            font-weight: 700;
+            color: #7aa2f7;
+            margin-bottom: 4px;
+        }
+
+        .profile-view-email {
+            font-size: 0.95rem;
+            color: #a9b1d6;
+            margin-bottom: 25px;
+        }
+
+        .submit-btn {
+            width: 100%;
+            padding: 12px;
+            background-color: #7aa2f7;
+            color: #0f111a;
+            border: none;
+            border-radius: 5px;
+            font-size: 1rem;
+            font-weight: 600;
+            cursor: pointer;
+            transition: background-color 0.3s ease;
+            margin-top: 10px;
+        }
+
+        .submit-btn:hover {
+            background-color: #bb9af7;
+        }
+
+        .logout-btn {
+            background-color: #f7768e;
+        }
+
+        .logout-btn:hover {
+            background-color: #ff5c7c;
+        }
+
+        .close-modal-btn {
+            width: 100%;
+            padding: 8px;
+            background: transparent;
+            color: #565f89;
+            border: none;
+            cursor: pointer;
+            font-size: 0.9rem;
+            margin-top: 15px;
+            text-decoration: underline;
+        }
+
+        .close-modal-btn:hover {
+            color: #a9b1d6;
+        }
+
+        .bottom-toast {
+            position: fixed;
+            bottom: -100px;
+            left: 50%;
+            transform: translateX(-50%);
+            background-color: #ff9e64;
+            color: #0f111a;
+            padding: 15px 30px;
+            border-radius: 30px;
+            font-weight: 700;
+            font-size: 1.1rem;
+            box-shadow: 0 10px 25px rgba(0, 0, 0, 0.4);
+            z-index: 200000;
+            transition: bottom 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.25), background-color 0.3s ease;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            pointer-events: none;
+            white-space: nowrap;
+        }
+
+        .bottom-toast.active {
+            bottom: 40px;
+        }
+
+        .bottom-toast.success { background-color: #9ece6a; }
+        .bottom-toast.warning { background-color: #ff9e64; }
+
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(20px); }
+            to { opacity: 1; transform: translateY(0); }
         }
     </style>
 </head>
 <body>
 
-    <!-- Načítací brána (Gateway) -->
-    <div id="loader-overlay">
-        <img src="logo.png" alt="Logo" id="loader-logo">
-        <div id="loader-text">KotakEngine - Inicializace [0]%</div>
-        <div class="progress-container"><div id="progress-bar"></div></div>
-        <div id="countdown-box">Termination for: <span id="countdown-timer">--:--:--:--</span></div>
+    <div id="landingPage">
+        <div class="ios-zoom-ripple" id="zoomRipple"></div>
+
+        <div class="top-bar">
+            <div class="profile-icon" id="profileToggle" title="Profil / Přihlášení">
+                <span class="plus-sign">+</span>
+                <span class="user-avatar">👤</span>
+            </div>
+        </div>
+
+        <div class="main-container">
+            <h1 class="title">KotakEngine</h1>
+            <button class="enter-btn" id="enterBtn">ENTER</button>
+            
+            <label class="auto-redirect-container" id="autoRedirectWrap">
+                <input type="checkbox" id="autoRedirectCheck">
+                Automaticky přejít na aplikaci
+            </label>
+        </div>
     </div>
 
-    <!-- Webview prvek (iframe), který dynamicky načte app.html -->
-    <iframe id="main-content" src="about:blank"></iframe>
+    <div class="bottom-toast warning" id="appToast">
+        <span id="toastText">⚠️ Nejprve se přihlas!</span>
+    </div>
 
-    <script>
-        (function() {
-            const loaderOverlay = document.getElementById('loader-overlay');
-            const progressBar = document.getElementById('progress-bar');
-            const loaderText = document.getElementById('loader-text');
-            const loaderLogo = document.getElementById('loader-logo'); 
-            const countdownBox = document.getElementById('countdown-box');
-            const countdownTimer = document.getElementById('countdown-timer');
-            const mainContent = document.getElementById('main-content');
+    <div class="modal-overlay" id="authModal">
+        <div class="modal-content">
+            
+            <div id="unauthenticatedContent">
+                <div class="auth-tabs">
+                    <div class="auth-tab active" id="tabLogin" onclick="switchTab('login')">Přihlášení</div>
+                    <div class="auth-tab" id="tabRegister" onclick="switchTab('register')">Registrace</div>
+                </div>
 
-            let countdownInterval;
-            let checkStatusInterval;
-            let isInitiallyLoaded = false;
-            let currentMaintenanceState = false;
+                <form class="auth-form active" id="formLogin" onsubmit="handleLogin(event)">
+                    <div class="form-group">
+                        <label for="loginEmail">Email</label>
+                        <input type="text" id="loginEmail" autocapitalize="none" autocorrect="off" inputmode="email" required>
+                    </div>
+                    <div class="form-group">
+                        <label for="loginPassword">Heslo</label>
+                        <input type="password" id="loginPassword" required>
+                    </div>
+                    <button type="submit" class="submit-btn">Přihlásit se</button>
+                </form>
 
-            // Pomocná funkce pro převod formátu "DD MM YYYY HH:mm" na Date Objekt
-            function parseDateString(str) {
-                if (!str) return null;
-                const parts = str.split(' ');
-                if (parts.length !== 4) return null;
-                const day = parseInt(parts[0], 10);
-                const month = parseInt(parts[1], 10) - 1;
-                const year = parseInt(parts[2], 10);
-                const timeParts = parts[3].split(':');
-                const hours = parseInt(timeParts[0], 10);
-                const minutes = parseInt(timeParts[1], 10);
-                return new Date(year, month, day, hours, minutes);
-            }
+                <form class="auth-form" id="formRegister" onsubmit="handleRegister(event)">
+                    <div class="form-group">
+                        <label for="regUsername">Uživatelské jméno</label>
+                        <input type="text" id="regUsername" placeholder="jen mala pismena a max 20 znaku" autocapitalize="none" autocorrect="off" required>
+                        <div class="error-message" id="regUsernameError">Uživatelské jméno musí mít max 20 znaků a obsahovat pouze malá písmena!</div>
+                    </div>
+                    <div class="form-group">
+                        <label for="regEmail">Email</label>
+                        <input type="text" id="regEmail" autocapitalize="none" autocorrect="off" inputmode="email" required>
+                    </div>
+                    <div class="form-group">
+                        <label for="regPassword">Heslo</label>
+                        <input type="password" id="regPassword" placeholder="aspon 8 znaku" required>
+                        <div class="error-message" id="regPasswordError">Heslo musí mít alespoň 8 znaků!</div>
+                    </div>
+                    <button type="submit" class="submit-btn">Registrovat se</button>
+                </form>
+            </div>
 
-            // Funkce pro plynulou animaci progress baru
-            function simulateLoading(target, textPrefix = "KotakEngine - Načítání") {
-                return new Promise((resolve) => {
-                    let progress = parseInt(progressBar.style.width) || 0;
-                    if (progress >= target) return resolve();
+            <div class="profile-view" id="authenticatedContent">
+                <div class="profile-view-avatar">👤</div>
+                <div class="profile-view-username" id="profUsername">username</div>
+                <div class="profile-view-email" id="profEmail">email@example.com</div>
+                <button class="submit-btn logout-btn" onclick="handleLogout()">Odhlásit se</button>
+            </div>
+
+            <button class="close-modal-btn" onclick="closeModal()">Zavřít</button>
+        </div>
+    </div>
+
+    <script type="module">
+        import { initializeApp } from "https://www.gstatic.com/firebasejs/9.22.1/firebase-app.js";
+        import { getDatabase, ref, set, get } from "https://www.gstatic.com/firebasejs/9.22.1/firebase-database.js";
+
+        const firebaseConfig = {
+            apiKey: "AIzaSyAGx6NDM6dqQzTwbhwDB1BhFnfjmepuLnE",
+            authDomain: "kotakengine-multi-app.firebaseapp.com",
+            databaseURL: "https://kotakengine-multi-app-default-rtdb.europe-west1.firebasedatabase.app",
+            projectId: "kotakengine-multi-app",
+            storageBucket: "kotakengine-multi-app.firebasestorage.app",
+            messagingSenderId: "692935167232",
+            appId: "1:692935167232:web:55ff99266dd5b230ca37e5",
+            measurementId: "G-TGVH1SWPPR"
+        };
+
+        const app = initializeApp(firebaseConfig);
+        const db = getDatabase(app, firebaseConfig.databaseURL);
+
+        let isLoggedIn = false;
+        let currentUserData = { username: "", email: "" };
+        let toastTimeout;
+
+        const landingPage = document.getElementById('landingPage');
+        const profileToggle = document.getElementById('profileToggle');
+        const authModal = document.getElementById('authModal');
+        const enterBtn = document.getElementById('enterBtn');
+        const appToast = document.getElementById('appToast');
+        const toastText = document.getElementById('toastText');
+        const zoomRipple = document.getElementById('zoomRipple');
+        
+        const autoRedirectWrap = document.getElementById('autoRedirectWrap');
+        const autoRedirectCheck = document.getElementById('autoRedirectCheck');
+
+        function isStrictMobile() {
+            const ua = navigator.userAgent || navigator.vendor || window.opera;
+            const isAndroidPhone = /Android/i.test(ua) && /Mobile/i.test(ua);
+            const isIphone = /iPhone/i.test(ua) && !/iPad/i.test(ua);
+            const isIpod = /iPod/i.test(ua);
+            return isAndroidPhone || isIphone || isIpod;
+        }
+
+        // --- AUTOMATICKÁ KONTROLA PAMĚTI PŘI REFRESHI ---
+        function checkSavedLogin() {
+            const savedUser = localStorage.getItem('kotak_user');
+            if (savedUser) {
+                const parsedData = JSON.parse(savedUser);
+                isLoggedIn = true;
+                currentUserData.username = parsedData.username;
+                currentUserData.email = parsedData.email;
+                profileToggle.classList.add('is-logged-in');
+                
+                // Ukážeme checkbox, protože uživatel je přihlášený
+                autoRedirectWrap.style.display = "flex";
+
+                // Podíváme se, jestli měl zapnutý automatický přechod
+                const autoRedirectActive = localStorage.getItem('kotak_auto_redirect') === 'true';
+                if (autoRedirectActive) {
+                    autoRedirectCheck.checked = true;
                     
-                    const interval = setInterval(() => {
-                        progress += Math.floor(Math.random() * 8) + 4;
-                        if (progress >= target) {
-                            progress = target;
-                            clearInterval(interval);
-                            resolve();
-                        }
-                        progressBar.style.width = progress + '%';
-                        loaderText.innerText = `${textPrefix} [${progress}]%`;
-                    }, 80);
-                });
-            }
-
-            // Živý odpočet času na obrazovce
-            function startCountdown(targetTime) {
-                if (countdownInterval) clearInterval(countdownInterval);
-                countdownBox.style.display = "block";
-
-                function updateTimer() {
-                    const now = new Date().getTime();
-                    const distance = targetTime - now;
-
-                    if (distance < 0) {
-                        clearInterval(countdownInterval);
-                        countdownTimer.innerText = "00:00:00:00";
-                        checkSystemStatus();
-                        return;
+                    // Pokud splňuje podmínku mobilního telefonu, okamžitě ho přesměrujeme do app.html bez klikání
+                    if (isStrictMobile()) {
+                        triggerDirectRedirect();
                     }
-
-                    const days = Math.floor(distance / (1000 * 60 * 60 * 24));
-                    const hours = Math.floor((distance % (1000 * 60 * 60 * 24)) / (1000 * 60 * 60));
-                    const minutes = Math.floor((distance % (1000 * 60 * 60)) / (1000 * 60));
-                    const seconds = Math.floor((distance % (1000 * 60)) / 1000);
-
-                    const dStr = String(days).padStart(2, '0');
-                    const hStr = String(hours).padStart(2, '0');
-                    const mStr = String(minutes).padStart(2, '0');
-                    const sStr = String(seconds).padStart(2, '0');
-
-                    countdownTimer.innerText = `${dStr}d ${hStr}h ${mStr}m ${sStr}s`;
                 }
+            }
+        }
+        checkSavedLogin();
 
-                updateTimer();
-                countdownInterval = setInterval(updateTimer, 1000);
+        // Funkce pro okamžité přesměrování při zapnutém checkboxu (vynechá animaci kliku)
+        function triggerDirectRedirect() {
+            const configRef = ref(db, 'app_config/path');
+            get(configRef).then((snapshot) => {
+                if (snapshot.exists()) {
+                    window.location.href = snapshot.val();
+                }
+            }).catch(err => console.error(err));
+        }
+
+        // Sledování změn stavu checkboxu
+        autoRedirectCheck.addEventListener('change', () => {
+            localStorage.setItem('kotak_auto_redirect', autoRedirectCheck.checked);
+        });
+
+        profileToggle.addEventListener('click', () => {
+            openModal();
+        });
+
+        enterBtn.addEventListener('click', () => {
+            if (!isLoggedIn) {
+                showToast("⚠️ Nejprve se přihlas!", "warning");
+                return;
             }
 
-            // Aktivace červeného módu údržby (zablokování / vykopnutí)
-            function enableMaintenanceView(text, targetTime, showCountdown) {
-                // Schováme aplikaci, vymažeme zdroj iframe a stáhneme loader dolů
-                mainContent.style.display = 'none';
-                mainContent.src = 'about:blank'; 
-                loaderOverlay.classList.remove('loader-hide');
+            if (!isStrictMobile()) {
+                showToast("❌ KotakEngine je povolen pouze na mobilních zařízeních Android a iOS!", "warning");
+                return;
+            }
 
-                loaderLogo.classList.add('logo-maintenance');
-                progressBar.classList.add('bar-maintenance');
-                progressBar.style.width = '100%';
-                
-                // Oprava: Text bude vždy MAINTENANCE MODE, jak jsi chtěl
-                loaderText.innerText = text;
-                loaderText.style.color = "#ff0000";
-                loaderText.style.textShadow = "0 0 10px #ff0000";
-                
-                if (showCountdown && targetTime) {
-                    startCountdown(targetTime.getTime());
+            const configRef = ref(db, 'app_config/path');
+            get(configRef).then((snapshot) => {
+                if (snapshot.exists()) {
+                    const localPath = snapshot.val(); 
+
+                    const rect = enterBtn.getBoundingClientRect();
+                    const clickX = rect.left + rect.width / 2;
+                    const clickY = rect.top + rect.height / 2;
+                    const size = Math.max(window.innerWidth, window.innerHeight) * 2;
+
+                    zoomRipple.style.width = `${size}px`;
+                    zoomRipple.style.height = `${size}px`;
+                    zoomRipple.style.left = `${clickX}px`;
+                    zoomRipple.style.top = `${clickY}px`;
+
+                    zoomRipple.classList.add('animate');
+
+                    setTimeout(() => {
+                        window.location.href = localPath;
+                    }, 550);
+
                 } else {
-                    if (countdownInterval) clearInterval(countdownInterval);
-                    countdownBox.style.display = "none";
+                    showToast("❌ Chyba: Cesta aplikace nebyla ve Firebase nalezena!", "warning");
                 }
+            }).catch((err) => {
+                console.error(err);
+                showToast("❌ Chyba sítě při stahování cesty z DB.", "warning");
+            });
+        });
+
+        function showToast(text, type = "warning") {
+            clearTimeout(toastTimeout);
+            toastText.innerText = text;
+            appToast.className = `bottom-toast ${type} active`;
+            toastTimeout = setTimeout(() => {
+                appToast.classList.remove('active');
+            }, 3500);
+        }
+
+        function openModal() {
+            const unauthContent = document.getElementById('unauthenticatedContent');
+            const authContent = document.getElementById('authenticatedContent');
+
+            if (isLoggedIn) {
+                unauthContent.style.display = 'none';
+                authContent.classList.add('active');
+                document.getElementById('profUsername').innerText = currentUserData.username;
+                document.getElementById('profEmail').innerText = currentUserData.email;
+            } else {
+                unauthContent.style.display = 'block';
+                authContent.classList.remove('active');
+            }
+            authModal.classList.add('active');
+        }
+
+        window.closeModal = function() {
+            authModal.classList.remove('active');
+            clearForms();
+        }
+
+        window.switchTab = function(type) {
+            const tabLogin = document.getElementById('tabLogin');
+            const tabRegister = document.getElementById('tabRegister');
+            const formLogin = document.getElementById('formLogin');
+            const formRegister = document.getElementById('formRegister');
+
+            if (type === 'login') {
+                tabLogin.classList.add('active');
+                tabRegister.classList.remove('active');
+                formLogin.classList.add('active');
+                formRegister.classList.remove('active');
+            } else {
+                tabLogin.classList.remove('active');
+                tabRegister.classList.add('active');
+                formLogin.classList.remove('active');
+                formRegister.classList.add('active');
+            }
+        }
+
+        function validateEmail(email) {
+            return email.includes('@') && email.includes('.');
+        }
+
+        window.handleLogin = function(event) {
+            event.preventDefault();
+            const emailInput = document.getElementById('loginEmail').value;
+            const passwordInput = document.getElementById('loginPassword').value;
+            
+            if (!validateEmail(emailInput)) {
+                showToast("❌ Neplatný formát emailu!", "warning");
+                return;
             }
 
-            // Deaktivace červeného módu (odemknutí webu a odsunutí loaderu)
-            function disableMaintenanceView() {
-                if (countdownInterval) clearInterval(countdownInterval);
-                countdownBox.style.display = "none";
+            const usersRef = ref(db, 'users');
+            get(usersRef).then((snapshot) => {
+                if (snapshot.exists()) {
+                    let userFound = false;
+                    const usersData = snapshot.val();
+                    
+                    for (let username in usersData) {
+                        if (usersData[username].email === emailInput && usersData[username].heslo === passwordInput) {
+                            userFound = true;
+                            isLoggedIn = true;
+                            currentUserData.username = username;
+                            currentUserData.email = usersData[username].email;
+                            
+                            localStorage.setItem('kotak_user', JSON.stringify(currentUserData));
+                            
+                            // Ukážeme checkbox pro auto přesměrování
+                            autoRedirectWrap.style.display = "flex";
 
-                loaderLogo.classList.remove('logo-maintenance');
-                progressBar.classList.remove('bar-maintenance');
-                
-                loaderText.style.color = "#00c853";
-                loaderText.style.textShadow = "0 0 5px #00c853";
-
-                // Povolíme zobrazení aplikace a načteme app.html do iframe
-                mainContent.style.display = 'block';
-                if (mainContent.src === 'about:blank' || mainContent.src === '') {
-                    mainContent.src = 'app.html';
-                }
-                
-                loaderOverlay.classList.add('loader-hide');
-            }
-
-            async function checkSystemStatus() {
-                try {
-                    const response = await fetch('maintenance.json?t=' + Date.now());
-                    if (!response.ok) throw new Error();
-                    const data = await response.json();
-
-                    const now = new Date();
-                    const startTime = parseDateString(data.start);
-                    const endTime = parseDateString(data.end);
-
-                    let isMaintenance = false;
-                    let statusText = "MAINTENANCE MODE"; // Výchozí text, který zůstane neměnný
-
-                    const maintenanceTimeOver = (endTime && now > endTime);
-
-                    if (!maintenanceTimeOver) {
-                        if (data.forced === true) {
-                            isMaintenance = true;
-                        } else if (startTime && endTime && now >= startTime && now <= endTime) {
-                            isMaintenance = true;
+                            profileToggle.classList.add('is-logged-in');
+                            closeModal();
+                            showToast(`✅ Vítej zpět, ${username}!`, "success");
+                            break;
                         }
                     }
-
-                    if (isMaintenance) {
-                        currentMaintenanceState = true;
-                        const showCountdown = (data["show-endtime"] && endTime && endTime > now);
-                        
-                        if (!isInitiallyLoaded) {
-                            await simulateLoading(100, "Prověřování systému");
-                            isInitiallyLoaded = true;
-                        }
-                        enableMaintenanceView(statusText, endTime, showCountdown);
-                    } else {
-                        if (!isInitiallyLoaded) {
-                            await simulateLoading(100);
-                            isInitiallyLoaded = true;
-                        }
-                        
-                        if (currentMaintenanceState || mainContent.style.display !== 'block') {
-                            currentMaintenanceState = false;
-                            disableMaintenanceView();
-                        }
+                    
+                    if (!userFound) {
+                        showToast("❌ Nesprávný email nebo heslo!", "warning");
                     }
-
-                } catch (e) {
-                    if (countdownInterval) clearInterval(countdownInterval);
-                    enableMaintenanceView("CHYBA SYSTÉMU", null, false);
+                } else {
+                    showToast("❌ V databázi zatím nejsou žádní uživatelé.", "warning");
                 }
+            }).catch((error) => {
+                console.error(error);
+                showToast("❌ Chyba při komunikaci s databází.", "warning");
+            });
+        }
+
+        window.handleRegister = function(event) {
+            event.preventDefault();
+            const username = document.getElementById('regUsername').value;
+            const email = document.getElementById('regEmail').value;
+            const password = document.getElementById('regPassword').value;
+            
+            const usernameError = document.getElementById('regUsernameError');
+            const passwordError = document.getElementById('regPasswordError');
+
+            let hasError = false;
+
+            const usernameRegex = /^[a-z]+$/;
+            if (username.length > 20 || !usernameRegex.test(username)) {
+                usernameError.style.display = 'block';
+                hasError = true;
+            } else {
+                usernameError.style.display = 'none';
             }
 
-            async function init() {
-                await simulateLoading(35);
-                await checkSystemStatus();
-
-                // Kontrola každých 5 sekund
-                checkStatusInterval = setInterval(checkSystemStatus, 5000);
+            if (!validateEmail(email)) {
+                showToast("❌ Neplatný formát emailu!", "warning");
+                return;
             }
 
-            window.onload = init;
-        })();
+            if (password.length < 8) {
+                passwordError.style.display = 'block';
+                hasError = true;
+            } else {
+                passwordError.style.display = 'none';
+            }
+
+            if (hasError) return;
+
+            const userCheckRef = ref(db, `users/${username}`);
+            get(userCheckRef).then((snapshot) => {
+                if (snapshot.exists()) {
+                    showToast("❌ Toto uživatelské jméno je již obsazené!", "warning");
+                } else {
+                    set(ref(db, `users/${username}`), {
+                        email: email,
+                        heslo: password
+                    }).then(() => {
+                        isLoggedIn = true;
+                        currentUserData.username = username;
+                        currentUserData.email = email;
+
+                        localStorage.setItem('kotak_user', JSON.stringify(currentUserData));
+                        
+                        // Ukážeme checkbox pro auto přesměrování
+                        autoRedirectWrap.style.display = "flex";
+
+                        profileToggle.classList.add('is-logged-in');
+                        closeModal();
+                        showToast("🎉 Registrace úspěšná! Nyní jsi přihlášen.", "success");
+                    }).catch((error) => {
+                        console.error(error);
+                        showToast("❌ Zápis do databáze selhal.", "warning");
+                    });
+                }
+            });
+        }
+
+        window.handleLogout = function() {
+            isLoggedIn = false;
+            currentUserData = { username: "", email: "" };
+            
+            // Vyčistíme kompletně paměť včetně přesměrování
+            localStorage.removeItem('kotak_user');
+            localStorage.removeItem('kotak_auto_redirect');
+            
+            autoRedirectCheck.checked = false;
+            autoRedirectWrap.style.display = "none"; // Schováme checkbox
+
+            profileToggle.classList.remove('is-logged-in');
+            closeModal();
+            showToast("ℹ️ Byl jsi odhlášen.", "warning");
+            
+            if (!window.location.href.includes('home.html')) {
+                window.location.href = "./home.html";
+            }
+        }
+
+        function clearForms() {
+            document.getElementById('formLogin').reset();
+            document.getElementById('formRegister').reset();
+            document.getElementById('regUsernameError').style.display = 'none';
+            document.getElementById('regPasswordError').style.display = 'none';
+        }
     </script>
 </body>
 </html>
