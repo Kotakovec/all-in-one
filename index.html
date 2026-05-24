@@ -84,7 +84,6 @@
 </head>
 <body>
 
-    <!-- Načítací brána (Gateway) -->
     <div id="loader-overlay">
         <img src="logo.png" alt="Logo" id="loader-logo">
         <div id="loader-text">KotakEngine - Inicializace [0]%</div>
@@ -92,7 +91,6 @@
         <div id="countdown-box">Termination for: <span id="countdown-timer">--:--:--:--</span></div>
     </div>
 
-    <!-- Webview prvek (iframe), který dynamicky načte app.html -->
     <iframe id="main-content" src="about:blank"></iframe>
 
     <script>
@@ -176,9 +174,8 @@
                 countdownInterval = setInterval(updateTimer, 1000);
             }
 
-            // Aktivace červeného módu údržby (zablokování / vykopnutí)
+            // Aktivace červeného módu údržby
             function enableMaintenanceView(text, targetTime, showCountdown) {
-                // Schováme aplikaci, vymažeme zdroj iframe a stáhneme loader dolů
                 mainContent.style.display = 'none';
                 mainContent.src = 'about:blank'; 
                 loaderOverlay.classList.remove('loader-hide');
@@ -187,7 +184,6 @@
                 progressBar.classList.add('bar-maintenance');
                 progressBar.style.width = '100%';
                 
-                // Oprava: Text bude vždy MAINTENANCE MODE, jak jsi chtěl
                 loaderText.innerText = text;
                 loaderText.style.color = "#ff0000";
                 loaderText.style.textShadow = "0 0 10px #ff0000";
@@ -200,7 +196,7 @@
                 }
             }
 
-            // Deaktivace červeného módu (odemknutí webu a odsunutí loaderu)
+            // Deaktivace červeného módu
             function disableMaintenanceView() {
                 if (countdownInterval) clearInterval(countdownInterval);
                 countdownBox.style.display = "none";
@@ -211,7 +207,6 @@
                 loaderText.style.color = "#00c853";
                 loaderText.style.textShadow = "0 0 5px #00c853";
 
-                // Povolíme zobrazení aplikace a načteme app.html do iframe
                 mainContent.style.display = 'block';
                 if (mainContent.src === 'about:blank' || mainContent.src === '') {
                     mainContent.src = 'app.html';
@@ -231,20 +226,20 @@
                     const endTime = parseDateString(data.end);
 
                     let isMaintenance = false;
-                    let statusText = "MAINTENANCE MODE"; // Výchozí text, který zůstane neměnný
+                    const statusText = "MAINTENANCE MODE";
 
-                    const maintenanceTimeOver = (endTime && now > endTime);
-
-                    if (!maintenanceTimeOver) {
-                        if (data.forced === true) {
-                            isMaintenance = true;
-                        } else if (startTime && endTime && now >= startTime && now <= endTime) {
-                            isMaintenance = true;
-                        }
+                    // LOGICKÁ OPRAVA: forced má absolutní přednost
+                    if (data.forced === true) {
+                        isMaintenance = true;
+                    } 
+                    // Pokud forced neběží, zkontrolujeme časové okno
+                    else if (startTime && endTime && now >= startTime && now <= endTime) {
+                        isMaintenance = true;
                     }
 
                     if (isMaintenance) {
                         currentMaintenanceState = true;
+                        // Odpočet ukážeme jen tehdy, pokud je v jsonu zapnutý a čas konce je v budoucnosti
                         const showCountdown = (data["show-endtime"] && endTime && endTime > now);
                         
                         if (!isInitiallyLoaded) {
