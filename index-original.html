@@ -4,10 +4,6 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>KotakEngine</title>
-    <link rel="manifest" href="manifest.json">
-    <meta name="theme-color" content="#00c853">
-    <link rel="apple-touch-icon" href="icon-192.png">
-    
     <style>
         body { 
             font-family: 'Consolas', 'Monaco', 'Courier New', monospace; 
@@ -112,6 +108,7 @@
             let isInitiallyLoaded = false;
             let currentMaintenanceState = false;
 
+            // Pomocná funkce pro převod formátu "DD MM YYYY HH:mm" na Date Objekt
             function parseDateString(str) {
                 if (!str) return null;
                 const parts = str.split(' ');
@@ -125,6 +122,7 @@
                 return new Date(year, month, day, hours, minutes);
             }
 
+            // Funkce pro plynulou animaci progress baru
             function simulateLoading(target, textPrefix = "KotakEngine - Načítání") {
                 return new Promise((resolve) => {
                     let progress = parseInt(progressBar.style.width) || 0;
@@ -143,6 +141,7 @@
                 });
             }
 
+            // Živý odpočet času na obrazovce
             function startCountdown(targetTime) {
                 if (countdownInterval) clearInterval(countdownInterval);
                 countdownBox.style.display = "block";
@@ -175,6 +174,7 @@
                 countdownInterval = setInterval(updateTimer, 1000);
             }
 
+            // Aktivace červeného módu údržby
             function enableMaintenanceView(text, targetTime, showCountdown) {
                 mainContent.style.display = 'none';
                 mainContent.src = 'about:blank'; 
@@ -228,15 +228,18 @@
                     let isMaintenance = false;
                     const statusText = "MAINTENANCE MODE";
 
+                    // LOGICKÁ OPRAVA: forced má absolutní přednost
                     if (data.forced === true) {
                         isMaintenance = true;
                     } 
+                    // Pokud forced neběží, zkontrolujeme časové okno
                     else if (startTime && endTime && now >= startTime && now <= endTime) {
                         isMaintenance = true;
                     }
 
                     if (isMaintenance) {
                         currentMaintenanceState = true;
+                        // Odpočet ukážeme jen tehdy, pokud je v jsonu zapnutý a čas konce je v budoucnosti
                         const showCountdown = (data["show-endtime"] && endTime && endTime > now);
                         
                         if (!isInitiallyLoaded) {
@@ -271,13 +274,6 @@
             }
 
             window.onload = init;
-
-            // REGISTRACE SERVICE WORKERU PRO PWA
-            if ('serviceWorker' in navigator) {
-                navigator.serviceWorker.register('sw.js')
-                .then(() => console.log("KotakEngine PWA - Registrace úspěšná."))
-                .catch(err => console.error("PWA Error:", err));
-            }
         })();
     </script>
 </body>
